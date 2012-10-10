@@ -1,5 +1,9 @@
 var sniff =
 {
-	init: function(){ return this; }
+	init: function(){ return this; },
+	
+	all: function()
+	{
 		
+	}
 }
