@@ -7,11 +7,10 @@ var sniff =
 //alert(navigator.userAgent);
     	
         var ua 				= navigator.userAgent || 'unknown',
-            classes 		= '',
+        	classes 		= '',
             checks 			= ['platform','browser','engine','os','osVersion','browserVersion'],
             platforms 		= ['iPhone','iPad','iPod','android','Android','Windows Phone','Windows','BlackBerry','BB10','Bada','webOS'],
-            engines 		= {'AppleWebKit':'Webkit','Gecko':'Gecko','Trident':'Trident','MSIE':'Trident','Presto':'Presto','BlackBerry':'Mango','wOSBrowser':'Webkit'},
-            //browsers 		= {'Chrome':'Chrome','CriOS':'Chrome','Firefox':'Firefox','Safari':'Safari','Opera':'Opera','IEMobile':'IE Mobile','MSIE':'IE','Dolfin':'Dolfin'}, 
+            engines 		= {'AppleWebKit':'Webkit','Gecko':'Gecko','Trident':'Trident','MSIE':'Trident','Presto':'Presto','BlackBerry':'Mango','wOSBrowser':'Webkit'}, 
             browsers 		= {'Chrome':'Chrome','CriOS':'Chrome','Firefox':'Firefox','BlackBerry':'BB Browser', 'BB10':'BB Browser', 'Safari':'Safari','Opera':'Opera','MSIE':'IE','Dolfin':'Dolfin','Silk':'Amazon Silk'},
             version 		= {'full': '?', 'major': '?', 'minor': '?', 'build': '?', 'revision': '?'},
             vRegExp 		= {
