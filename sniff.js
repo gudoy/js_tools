@@ -5,11 +5,12 @@ var sniff =
     all: function()
     {
 //alert(navigator.userAgent);
-    	
-        var ua 				= navigator.userAgent || 'unknown',
-        	classes 		= '',
+		var ucfirst 		= function(str){ return str.substr(0,1).toUpperCase() + str.substr(1,str.length); },
+			pad 			= function(arr,s,v){ var l = s - arr.length; for (var i = 0; i<l; i++){ arr.push(v); } return arr; }, 
+        	ua 				= navigator.userAgent || 'unknown',
+            classes 		= '',
             checks 			= ['platform','browser','engine','os','osVersion','browserVersion'],
-            platforms 		= ['iPhone','iPad','iPod','android','Android','Windows Phone','Windows','BlackBerry','BB10','Bada','webOS'],
+            platforms 		= ['iPhone','iPad','iPod','android','Android','Windows Phone','Windows', 'Mac OS X','Linux','BlackBerry','BB10','Bada','webOS','Tizen'],
             engines 		= {'AppleWebKit':'Webkit','Gecko':'Gecko','Trident':'Trident','MSIE':'Trident','Presto':'Presto','BlackBerry':'Mango','wOSBrowser':'Webkit'}, 
             browsers 		= {'Chrome':'Chrome','CriOS':'Chrome','Firefox':'Firefox','BlackBerry':'BB Browser', 'BB10':'BB Browser', 'Safari':'Safari','Opera':'Opera','MSIE':'IE','Dolfin':'Dolfin','Silk':'Amazon Silk'},
             version 		= {'full': '?', 'major': '?', 'minor': '?', 'build': '?', 'revision': '?'},
@@ -20,98 +21,109 @@ var sniff =
                 'blackberry': '.*(BlackBerry[a-zA-Z0-9]*)\\/([0-9\\.]*)\\s.*',
                 'bbbrowser': '.*(Version)\\/([0-9\\.]*)\\s?.*',
                 'safari': '.*(Version)\\/([0-9\\.]*)\\s?.*'
-            };
+            },
             osVRegExp 		= {
             	'android': '.*Android\\s([\\d\\.]*)\\;.*',
-            	'ios': '.*iPhone\\sOS\\s([\\d\\_]*)\\s.*',
+            	'ios': '.*CPU\\s(?:iPhone\\s)?OS\\s([\\d\\_]*)\\s.*',
             	'wpos': '.*Windows\\sPhone\\s(?:OS\\s)?([\\d\\.]*)\\;.*',
             	'bbos': '.*Version\\/([0-9\\.]*)\\s?.*'
             }
 
         // Set Default values
-        for (var i=0, l=checks.length; i<l; i++)    { var k = checks[i]; app[k] = 'unknown' + k.ucfirst(); }
+        for (var i=0, l=checks.length; i<l; i++)    { var k = checks[i]; app[k] = 'unknown' + ucfirst(k); }
             
         // Look for platform, browser & engines
-        for (var i=0, l=platforms.length; i<l; i++) { if ( ua.indexOf(platforms[i]) !== -1 ){ app.platform 	= platforms[i].toLowerCase(); break; } }
+        for (var i=0, l=platforms.length; i<l; i++) { if ( ua.indexOf(platforms[i]) !== -1 ){ app.platform 	= platforms[i].toLowerCase().replace(/\s/,''); break; } }
         for (var name in browsers) 					{ if ( ua.indexOf(name) !== -1 )		{ app.browser 	= browsers[name].toLowerCase().replace(/\s/,''); break; } }
         for (var name in engines) 					{ if ( ua.indexOf(name) !== -1 )		{ app.engine 	= engines[name].toLowerCase(); break; } }
 
-		// Since Android stock browser UA may include "Mobile Safari" while it's not Mobile Safari at all, we have to fix this
-		if ( app.platform === 'android' && app.browser === 'safari' ){ app.browser = "unknownBrowser"; }
+		// Specific cases
+		// Android stock browser UA may include "Mobile Safari" while it's not
+		if 		( app.platform === 'android' && app.browser === 'safari' )	{ app.browser = "unknownBrowser"; }
+		// Blackberry 10 no longer contains the blackberry string 
+		else if ( app.platform === 'bb10' )									{ app.platform = "blackberry"; }
+		// 
+		else if ( app.platform === 'tizen' )	{ app.browser = "tizenBrowser"; }
 		
-		if ( app.platform === 'bb10' ){ app.platform = "blackberry"; }
+		// TODO: is app.browser === 'firefox' && app.os !== 'android ==> app.os = 'firefoxos' 
+		
+        // Look for os
+        //if      ( ['iphone','ipad','ipod'].inArray(app.platform) ) 		{ app.os = 'ios'; }
+        if      ( /ip(hone|ad|od)/.test(app.platform) ) 				{ app.os = 'ios'; }
+        else if ( app.platform === 'android' ) 							{ app.os = 'android'; }
+        else if ( app.platform === 'windows phone' ) 					{ app.os = 'wpos'; }
+        else if ( app.platform === 'blackberry' ) 						{ app.os = 'bbos'; }
+        else if ( app.platform === 'windows' ) 							{ app.os = 'windows'; }
+        else if ( app.platform === 'macosxx' ) 							{ app.os = 'macos'; }
+        //else if ( app.plafform !== 'unknownPlatform' ) 					{ app.os = app.platform.toLowerCase(); }
 
         // Try to get the browser version data
         if ( app.browser !== 'unknownBrowser' )
         {
-            var pattern = vRegExp[app.browser] || vRegExp['default'].replace('default', app.browser.ucfirst()), // Get regex pattern to use 
+            var pattern = vRegExp[app.browser] || vRegExp['default'].replace('default', ucfirst(app.browser)), // Get regex pattern to use 
                 p 		= ua.replace(new RegExp(pattern, 'gi'), '$2').split('.'); 								// Split on '.'
 
-                p.unshift(p.join('.') || '?')     // Insert the full version as the 1st element
-                p.pad(5, '?')                     // Force the parts & default version arrays to have same length
+                p.unshift(p.join('.') || '?'); 		// Insert the full version as the 1st element
+                pad(p, 5, '?'); 					// Force the parts & default version arrays to have same length
             
             // Assoc default version array keys to found values
             app.browserVersion = {'full': p[0], 'major':p[1], 'minor':p[2], 'build':p[3], 'revision':p[4]};
         }
         else { app.browserVersion = version; }
         
-        
-        // Look for os
-        if      ( ['iphone','ipad','ipod'].inArray(app.platform) ) 		{ app.os = 'ios'; }
-        else if ( app.platform === 'android' ) 							{ app.os = 'android'; }
-        else if ( app.platform === 'windows phone' ) 					{ app.os = 'wpos'; }
-        else if ( app.platform === 'blackberry' ) 						{ app.os = 'bbos'; }
-        else if ( app.plafform !== 'unknownPlatform' ) 					{ app.os = app.platform.toLowerCase(); }
-        
-        // Loop for os version
+        // Look for os version
         if ( app.os !== 'unknownOs' && osVRegExp[app.os] )
         {
-        	var pattern = ua.replace(new RegExp(osVRegExp[app.os], 'i'), '$1'),
-        		p 		= pattern.replace(/_/g,'.').split('.');
+        	var pattern = ua.replace(new RegExp(osVRegExp[app.os], 'i'), '$1').replace(/_/g,'.'),
+        		p 		= ( pattern.indexOf(' ') === -1 ? pattern : '?.?.?.?').split('.');
         		
-        		p.unshift(p.join('.') || '?')     // Insert the full version as the 1st element
-        		p.pad(5, '?')                     // Force the parts & default version arrays to have same length
+        		p.unshift(p.join('.') || '?'); 		// Insert the full version as the 1st element
+        		pad(p, 5, '?'); 					// Force the parts & default version arrays to have same length
         		
+            // Assoc default version array keys to found values
         	app.osVersion = {'full': p[0], 'major':p[1], 'minor':p[2], 'build':p[3], 'revision':p[4]};
         }
+        else { app.osVersion = version; }
+
+        // Get viewport dimensions        	
+        app.pixelRatio 		= window.devicePixelRatio;
+        app.vw 				= Math.round(window.outerWidth/app.pixelRatio);
+        app.vh 				= Math.round(window.outerHeight/app.pixelRatio);
         
         // Get or test some usefull properties 
         app.device 			= { 'screen':{w:window.screen.width, h:window.screen.height} };
         app.isSimulator 	= ua.indexOf('XDeviceEmulator') > -1;
         app.isStandalone 	= typeof navigator.standalone !== 'undefined' && navigator.standalone;
         app.isRetina 		= (window.devicePixelRatio && window.devicePixelRatio > 1) || false;
-        app.isMobile 		= ua.indexOf('Mobile') !== -1;
+        app.isTv 			= false;
+        app.isMobile 		= ua.indexOf('Mobile') !== -1 || ( app.os === 'android' && !app.isTV ); // Touch only
+        app.isDesktop 		= !app.isMobile && !app.isTv; 											// Mouse (+touch)
         
-        // And add retrieven data to classname on the html tag
-        classes = 
-            app.platform + ' ' + app.os + ' ' + app.engine + ' ' + app.browser 
-            //app.platform + ' ' + app.os + ' ' + app.browser
-            + (app.isStandalone ? ' ' : ' no-') + 'standalone' 
-            + (app.isRetina     ? ' ' : ' no-') + 'retina' 
-            + (app.isMobile     ? ' ' : ' no-') + 'mobile'
-            ;
+//alert(window.innerWidth + 'x' + window.innerHeight)
+//alert(window.outerWidth + 'x' + window.outerHeight)
+//alert(window.devicePixelRatio)
+
+//alert('isDesktop:' + app.isDesktop);
         
-        $('html')
-        	.addClass(classes)
-        	.attr(
-	        {
-	            'data-platform': app.platform,
-	            'data-os': app.os,
-	            'data-osVersion': app.osVersion.full,
-	            'data-osvMajor': app.osVersion.major,
-	            'data-osvMinor': app.osVersion.minor,
-	            'data-osvBuild': app.osVersion.build,
-	            'data-osvRevision': app.osVersion.revision,
-	            'data-browser': app.browser,
-	            'data-engine': app.engine,
-	            'data-browserVersion': JSON.stringify(app.browserVersion) || app.browserVersion,
-	            'data-bvMajor': app.browserVersion.major,
-	            'data-bvMinor': app.browserVersion.minor,
-	            'data-bvBuild': app.browserVersion.build,
-	            'data-bvRevision': app.browserVersion.revision
-	        })
-        	.removeClass('no-js');
+		var attrs 	= {},
+			classes = '',
+			props 	= ['platform', 'os', 'engine', 'browser', 'pixelRatio', 'vw','vh'],
+			tests 	= ['simulator','standalone','retina','mobile','desktop'],
+			vtests 	= {'os':'os', 'browser':'b'};
+		
+		// Add retrieved data as classnames & data attributes on the html tag
+		for (var i=0, len=props.length; i<len; i++){ var k = props[i]; classes += app[k]  + ' '; attrs['data-' + k] = app[k]; }
+		for (var i=0, len=tests.length; i<len; i++){ var k = tests[i]; classes += ( app['is' + ucfirst(k)] ? ' ' : ' no-' ) + k; }
+		for ( var k in vtests)
+		{
+			var alias 	= vtests[k],
+				prop 	= k + 'Version'; 
+			attrs['data-' + prop] = app[prop].full;
+			for (var p in version){ attrs['data-' + alias + 'v' + ucfirst(p)] = app[prop][p]; }
+		}
+        
+        $('html').addClass(classes).removeClass('no-js').attr(attrs);
 
         return this;
-    },
+    }
 }
